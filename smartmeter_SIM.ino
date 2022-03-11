@@ -1,4 +1,4 @@
-/*
+/* test
  * Project SM_SIM800L_ESP32
  * Description:
  * Author:
@@ -38,7 +38,7 @@ const char gprsUser[] = "";
 const char gprsPass[] = "";
 
 // SIM card PIN (leave empty, if not defined)
-const char simPIN[]   = ""; 
+const char simPIN[]   = "";
 
 // set GSM PIN, if any
 #define GSM_PIN ""
@@ -66,16 +66,16 @@ const char* mqttPassword = "REPLACE_WITH_YOUR_MQTT_PASS";  // MQTT password
 
 
 int ver = 3;
-EnergyMonitor emon1;  
+EnergyMonitor emon1;
 EnergyMonitor emon2;
-EnergyMonitor emon3; 
+EnergyMonitor emon3;
 float blynkPublish;
 float one_min_measure;
 float accumulatePow;
 int nextPeriod;
 float average;
 long interval = 2000;
-long previousMillis = 0; 
+long previousMillis = 0;
 
 float hourBegining;
 float hourConsumption;
@@ -117,23 +117,23 @@ float fifteen[15];
 
 float avTenSec = 0;
 
-std::map<String, float>powerMap; 
+std::map<String, float>powerMap;
 std::vector< float > measurements;
 
 
 
 int trigger = 0;
-char data[80]; 
+char data[80];
 
-double Irms1; 
+double Irms1;
 double Irms2;
-double Irms3; 
+double Irms3;
 
 int j;
 
 String stampRecieved;
 
-StaticJsonDocument<200>parser; 
+StaticJsonDocument<200>parser;
 
 const char* deviceID = "sm-0009";
 
@@ -180,22 +180,22 @@ void mqttCallback(char* topic, byte* message, unsigned int len) {
     String p = "";
     for (int i=0;i<len;i++)
     {
-        p += (char)message[i];        
-    }      
-    Serial.println();    
+        p += (char)message[i];
+    }
+    Serial.println();
     //test topic
     if (String(topic) == "RED")
-    {       
-        mqtt.publish("size_plusOnemin", "ECHO ECHO");       
+    {
+        mqtt.publish("size_plusOnemin", "ECHO ECHO");
     }
 
     if (String(topic) == String(deviceID)+"/calibrate")
-    {       
-        calibrationKoeff = String(p);   
+    {
+        calibrationKoeff = String(p);
     }
     if (String(topic) == String(deviceID)+"/adjustment")
-    {       
-        adj = String(p);   
+    {
+        adj = String(p);
     }
 
 
@@ -215,9 +215,9 @@ void mqttCallback(char* topic, byte* message, unsigned int len) {
         it = powerMap.find(strValue);
         if (it != powerMap.end())
         {
-            powerMap.erase (it);  
-            trigger = 1;   
-        }              
+            powerMap.erase (it);
+            trigger = 1;
+        }
     }
 }
 
@@ -248,10 +248,10 @@ boolean mqttConnect() {
 }
 
 
-void setup() { 
+void setup() {
   SerialMon.begin(115200);
   delay(10);
-  
+
 pinMode(4, OUTPUT);
 pinMode(5, OUTPUT);
 pinMode(23, OUTPUT);
@@ -261,7 +261,7 @@ digitalWrite(5, HIGH);
 digitalWrite(23, HIGH);
 
   // Set modem reset, enable, power pins
-  SerialAT.begin(115200, SERIAL_8N1, 26, 27); 
+  SerialAT.begin(115200, SERIAL_8N1, 26, 27);
   SerialMon.println("Wait...");
   delay(6000);
 
@@ -283,7 +283,7 @@ digitalWrite(23, HIGH);
   }
 
 
-  
+
 
   String modemInfo = modem.getModemInfo();
   SerialMon.print("Modem Info: ");
@@ -304,7 +304,7 @@ digitalWrite(23, HIGH);
   else {
     SerialMon.println(" OK");
   }
-  
+
   if (modem.isGprsConnected()) {
     SerialMon.println("GPRS connected");
     timeConvert();
@@ -314,7 +314,7 @@ digitalWrite(23, HIGH);
     nextPeriod = currMin + 2;
   }
 
-  
+
       // MQTT Broker setup
     mqtt.setServer(broker, 1883);
     mqtt.setCallback(mqttCallback);
@@ -326,7 +326,7 @@ digitalWrite(23, HIGH);
     analogReadResolution(ADC_BITS);
     calibrationKoeff = "1";
     adj= "1";
- 
+
     if (!mqtt.connected()) {
     SerialMon.println("=== MQTT NOT CONNECTED ===");
     // Reconnect every 10 seconds
@@ -339,63 +339,63 @@ digitalWrite(23, HIGH);
     }
     delay(100);
     return;
-    }    
+    }
     powerMap.clear();
-   
+
 }
 
 
 void blynkUpdate()
 {
-      
+
       char blynkPub[8];
-      
+
       dtostrf(blynkPublish, 1, 2, blynkPub);
       mqtt.publish(ping,blynkPub);
       //Serial.println(blynkPublish);
 
-      
+
 }
 
  void measure()
-{ 
-    
-  
-    unsigned long currentMillis = millis();  
-    
+{
+
+
+    unsigned long currentMillis = millis();
+
     if(currentMillis - previousMillis > interval)
-    { 
+    {
         Irms1 = emon1.calcIrms(5500);
-       
+
         Irms2 = emon2.calcIrms(5500);
         Irms3 = emon3.calcIrms(5500);
         double Irms = Irms1 + Irms2 + Irms3;
-        double power = Irms*230;  
-        
-        tenSec[j] = power;         
-        j++;        
+        double power = Irms*230;
+
+        tenSec[j] = power;
+        j++;
             if (j > 4)
             {
-                for (int k=0; k < 5; k++) 
-                {          
-                    average += tenSec[k];           
-                }          
+                for (int k=0; k < 5; k++)
+                {
+                    average += tenSec[k];
+                }
                 average /= 5;
-                
+
                 float devCalibrate = stof(calibrationKoeff);
                 float devAdj = stof(adj);
                 blynkPublish = average*devCalibrate+devAdj;
-                measurements.push_back(blynkPublish);//add every 10s                
+                measurements.push_back(blynkPublish);//add every 10s
                 average = 0;
                 j = 0;
-            }          
+            }
 
         previousMillis = currentMillis;
-    }   
+    }
 }
 
 
- 
+
 void timeConvert (){
 
 String time = modem.getGSMDateTime(DATE_FULL);
@@ -433,16 +433,16 @@ currDay = currDayString.toInt();
     t.tm_hour = currHour;
     t.tm_min = currMin;
     t.tm_sec = 00;
-    time_t timeSinceEpoch = mktime(&t);    
+    time_t timeSinceEpoch = mktime(&t);
     int stamp = int(timeSinceEpoch);
     String timestamp = String(stamp);
-    return timestamp;    
-  } 
+    return timestamp;
+  }
 
-  struct timestampPower { 
+  struct timestampPower {
      void myFunc()
     {
-        for (std::map<String, float>::iterator it = powerMap.begin(); it != powerMap.end(); ++it) 
+        for (std::map<String, float>::iterator it = powerMap.begin(); it != powerMap.end(); ++it)
         {
             String timeSt = "\"timestamp\": " + String((*it).first);
             String powerSt = "\"power\": " + String((*it).second);
@@ -451,12 +451,12 @@ currDay = currDayString.toInt();
             payload.toCharArray(data, (payload.length() + 1));
             Serial.println("++++++++++");
             //Serial.println(data);
-            mqtt.publish(sendFifteen, data);  
+            mqtt.publish(sendFifteen, data);
         }
-    }  
+    }
 
   void checkDb(){
-  
+
     if(!powerMap.empty())
     {
     String mapKey = (--powerMap.end())->first;
@@ -476,7 +476,7 @@ currDay = currDayString.toInt();
 
 void loop() {
 
-  
+
       timeConvert();
       if (!mqtt.connected()) {
         SerialMon.println("=== MQTT NOT CONNECTED ===");
@@ -490,60 +490,60 @@ void loop() {
       }
         delay(100);
         return;
-      }  
-       
-    unsigned long currentMillisSend = millis();  
-  
+      }
+
+    unsigned long currentMillisSend = millis();
+
     if(currentMillisSend - previousMillisSend > intervalSend)
-    {           
-      
+    {
+
         if (trigger == 1 && powerMap.size() > 0)
         {
-     
+
             tp.checkDb();
-   
+
             trigger = 0;
-     
+
         }
         previousMillisSend = currentMillisSend;
-    }   
+    }
 
-    measure();  
+    measure();
 
     if(currentMillisSend - previousMillisSendBlynk > intervalSendBlynk)
-    {        
+    {
         blynkUpdate();
         previousMillisSendBlynk = currentMillisSend;
-    } 
-     
+    }
 
-    if (currMin != prevMin)   
-    {     
+
+    if (currMin != prevMin)
+    {
         one_min_measure = accumulate( measurements.begin(), measurements.end(), 0.0)/measurements.size();
         measurements.clear();
         struct tm t0;
-        String timestamp = timeGet(t0); 
+        String timestamp = timeGet(t0);
         if (!isnan(one_min_measure) && !isinf(one_min_measure))
         {
             powerMap.insert(std::pair<String, float>(timestamp,one_min_measure));
             tp.myFunc();
         }
-        
+
         if (currMin == 0)
-        { 
+        {
           sixty[59] = one_min_measure;
         }
         else
         {
           sixty[currMin-1] = one_min_measure;
-        }    
-  
-        prevMin = currMin;  
+        }
+
+        prevMin = currMin;
         if (nextPeriod >= 60 )
         {
             nextPeriod = 0;
         }
-        Serial.println(nextPeriod); 
+        Serial.println(nextPeriod);
     }
 
     if (currMin == nextPeriod)
@@ -551,23 +551,23 @@ void loop() {
             Serial.println("xxxyyy");
             int err_size = powerMap.size();
             String err_string = String(err_size);
-                       
+
             mqtt.publish("boron", (char*) err_string.c_str());
 
             if (err_size > 100)
             {
               powerMap.clear();
             }
-                             
+
             tp.checkDb();
             trigger = 1;
             nextPeriod += 2;
-        }  
-        
+        }
+
 
     // if (currHour != prevHour)
     // {
-       
+
     //     hourBegining = accumulatePow;
     //     currPriceH = 0;
     //     prevHour = currHour;
@@ -584,9 +584,9 @@ void loop() {
     //     currPriceM = 0;
     //     prevMonth = currMonth;
     // }
-      
+
 
     mqtt.loop();
-    
-       
+
+
 }
